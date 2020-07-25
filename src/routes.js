@@ -2,6 +2,7 @@ import express from 'express';
 
 import config from '../config.js';
 import {sendMail} from './mailer.js';
+import {sendMessage} from './flowroute.js';
 
 // Check if message contains keywords in config.js list
 let containsKeyword = message => {
@@ -27,7 +28,7 @@ export default function routes(app, pool){
     // Listen for SMS POST requests from callback URL (set on the Flowroute website)
     app.post(config.callbackUrl, async (req, res) => {
         let connection;
-        
+
         try {
             const message = req.body.body;
             const from = req.body.from;
@@ -42,6 +43,9 @@ export default function routes(app, pool){
 
                 // Insert the number if it is unique
                 if(existingRows.length == 0) await connection.query('INSERT INTO blacklist value (?)', [from]);
+
+				// Send a reply to the intial message
+				await sendMessage(from, 'You have been successfuly removed from the messaging service.')
             }else{
                 // Send an email with SMS details if it doesn't match any of the keywords
                 await sendMail(from, `
