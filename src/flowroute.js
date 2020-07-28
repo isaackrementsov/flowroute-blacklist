@@ -33,7 +33,7 @@ export let lookupNotHandled = async (startDate, endDate, connection) => {
 	const notHandled = [];
 
 	for(let message of messages){
-		if(message.attributes.body && message.attributes.from.toString() != config.flowroute.removalMessage){
+		if(message.attributes.body && message.attributes.body != config.flowroute.removalMessage){
 			// Check if the message was put in the responded table
 			const rows = await connection.query('SELECT * FROM responded WHERE message_id = (?)', [message.id]);
 
