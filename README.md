@@ -33,7 +33,21 @@ Once you have decided on an email address to use, simply add it to the `email` s
 By default, gmail will deny usage of Nodemailer without Oath verification. To solve this issue, go to the [Less Secure Apps Settings](https://myaccount.google.com/lesssecureapps) page and toggle the switch shown to the "on" status.  
 
 ### Flowroute
-To actually accept incoming SMS from flowroute, you will need to add a callback url in the Flowroute API portal as explained [here](https://blog.flowroute.com/2016/09/22/receive-an-inbound-message/). Then, modify the `callbackUrl` option in `config.js` accordingly. No other Flowroute configuration or credentialing is required.
+To actually accept incoming SMS from flowroute, you will need to add a callback url in the Flowroute API portal as explained [here](https://blog.flowroute.com/2016/09/22/receive-an-inbound-message/). Then, modify the `callbackUrl` option in `config.js` accordingly.  
+
+You also will need to configure the `flowroute` section in `config.js` as follows:
+
+```js
+const config = {
+    ...
+    flowroute: {
+        username: 'api_access_key',
+        password: 'api_secret_key',
+        removalMessage: 'Message to send to users after they are blacklisted'
+    }
+    ...
+}
+```
 
 You will need to configure this application so that it runs on a public IP address or domain name. This can be done through a hosting service or personal server.
 ### MariaDB
