@@ -22,7 +22,7 @@ let exportTxt = async pool => {
 
         for(let i = 0; i < rows.length; i++){
             const row = rows[i];
-            text += row.from_number + (i == rows.length - 1 ? '' : '\n');
+            text += row.from_number + (i == rows.length - 1 ? '' : ',\n');
         }
 
         // Write the text data to './db.txt'

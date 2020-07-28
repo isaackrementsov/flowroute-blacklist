@@ -23,6 +23,7 @@ const containsKeyword = message => {
 const handleMessage = async (message, connection) => {
     const body = message.attributes.body;
     const from = message.attributes.from;
+    const to = message.attributes.to;
 
     // Blacklist the number if the SMS contains particular keywords
     if(containsKeyword(body)){
@@ -33,7 +34,7 @@ const handleMessage = async (message, connection) => {
         if(existingRows.length == 0) await connection.query('INSERT INTO blacklist value (?)', [from]);
 
         // Send a reply to the intial message
-        await sendMessage(from, 'You have been successfuly removed from the messaging service.');
+        await sendMessage(to, from, config.flowroute.removalMessage);
     }else{
         // Send an email with SMS details if it doesn't match any of the keywords
         await sendMail(from, `

@@ -10,10 +10,10 @@ const getMessages = promisify(flowroute.MessagesController.getLookUpASetOfMessag
 const callback = (_err, _res, _context) => {};
 
 // Send a message to a predefined number
-export let sendMessage = async (to, content) => {
+export let sendMessage = async (from, to, content) => {
 	const msg = {
 		to: to,
-		from: config.flowroute.fromNumber,
+		from: from,
 		body: content
 	};
 
@@ -29,11 +29,11 @@ let listMessages = async (startDate, endDate) => {
 export let lookupNotHandled = async (startDate, endDate, connection) => {
 	let messages = await listMessages(startDate, endDate);
 	messages = JSON.parse(messages).data;
-	console.log(messages)
+
 	const notHandled = [];
 
 	for(let message of messages){
-		if(message.attributes.body && message.attributes.from.toString() != config.flowroute.fromNumber){
+		if(message.attributes.body && message.attributes.from.toString() != config.flowroute.removalMessage){
 			// Check if the message was put in the responded table
 			const rows = await connection.query('SELECT * FROM responded WHERE message_id = (?)', [message.id]);
 
