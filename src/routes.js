@@ -30,11 +30,13 @@ const handleMessage = async (message, connection) => {
         // Check if the number is already blacklisted
         const existingRows = await connection.query('SELECT * FROM blacklist WHERE from_number=(?)', [from]);
 
-        // Insert the number if it is unique
-        if(existingRows.length == 0) await connection.query('INSERT INTO blacklist value (?)', [from]);
+        // Insert the number and send a message if it is unique
+        if(existingRows.length == 0){
+            await connection.query('INSERT INTO blacklist value (?)', [from]);
 
-        // Send a reply to the intial message
-        await sendMessage(to, from, config.flowroute.removalMessage);
+            // Send a reply to the intial message
+            await sendMessage(to, from, config.flowroute.removalMessage);
+        }
     }else{
         // Send an email with SMS details if it doesn't match any of the keywords
         await sendMail(from, `
