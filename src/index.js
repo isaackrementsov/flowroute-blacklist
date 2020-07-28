@@ -8,11 +8,13 @@
 
 import express from 'express';
 import bodyParser from 'body-parser';
+import {promisify} from 'util';
 import flowroute from '../flowroute-sdk-v3-nodejs/lib/index.js';
 
 import config from '../config.js';
 import routes from './routes.js';
 import {initDB, testDB} from './db.js';
+
 
 // Initialize FlowRoute
 flowroute.Configuration.username = config.flowroute.username;
@@ -26,7 +28,7 @@ app.use(bodyParser.urlencoded({extended: false}));
 const pool = initDB();
 testDB(pool);
 
-app.listen(config.port, () => {
+app.listen(config.port, async () => {
     console.log('Listening on port', config.port);
 });
 

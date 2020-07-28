@@ -26,7 +26,7 @@ let exportTxt = async pool => {
         }
 
         // Write the text data to './db.txt'
-        fs.writeFile('db.txt', text, e => {
+        fs.writeFileSync('db.txt', text, e => {
             if(e){
                 console.log('Error writing file!', e);
             }
