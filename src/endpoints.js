@@ -39,27 +39,58 @@ const handleMessage = async (message, connection) => {
         }
     }else{
         // Send an email with SMS details if it doesn't match any of the keywords
-        await sendMail(from, `
+        const messageId = await sendMail(from, `
             <div style="background-color: white; padding: 20px 30px; border: 1px solid grey; border-radius: 5px; font-family: 'Open Sans', Helvetica, sans-serif">
                 <h2>Incoming SMS</h2>
                 <h3>From: ${from}</h3>
                 <p style="background-color: whitesmoke; padding: 10px 15px; border-radius: 3px">${body}</p>
             </div>
         `);
+
+        await connection.query('INSERT INTO sent_emails (message_id, from_number, to_number) values (?, ?, ?)', [messageId, from, to]);
     }
 
     // Make sure message has been properly handled
     await connection.query('INSERT INTO responded value (?)', [message.id]);
 }
 
+// Method to make email replies texts to orginal number
+export function handleReply(pool){
+    return async mail => {
+        let inReplyTo = mail.headers['in-reply-to'];
+
+        if(inReplyTo){
+            let connection;
+
+            try {
+                connection = await pool.getConnection();
+                const results = await connection.query('SELECT from_number, to_number FROM sent_emails WHERE message_id=(?)', [inReplyTo]);
+
+                if(results.length > 0){
+                    // Get the phone numbers involved in the original email
+                    const numbers = results[0];
+                    // Send a reply to the sender (from_number) from the receiver (to_number)
+                    await sendMessage(numbers['to_number'], numbers['from_number'], mail.text);
+                }
+            }catch(e){
+                // Display mail problems
+                console.log('There was an issue converting an email reply to an SMS');
+                console.log(e);
+            }finally {
+                if(connection) await connection.end();
+            }
+        }
+    }
+}
+
 const router = express.Router();
 
 // Handle all HTTP requests
-export default function routes(app, pool){
+export function routes(app, pool){
     app.use('/', router);
 
     // Listen for SMS POST requests from callback URL (set on the Flowroute website)
-    app.post(config.callbackUrl, async (req, res) => {
+    app.post(config.callbackUrl, async (_req, res) => {
         let connection;
 
         try {

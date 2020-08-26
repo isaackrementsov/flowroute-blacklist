@@ -15,19 +15,23 @@ let createTransport = () => {
     });
 }
 
-// Report SMS data via email
+// Report SMS data via email and send a messageId to detect replies later
 export let sendMail = async (from, html) => {
     try {
         const transport = createTransport();
 
-        await transport.sendMail({
+        const info = await transport.sendMail({
             from: `SMS Webhook @ <${email.user}>`,
             to: email.user,
             subject: `Incoming SMS From ${from}`,
             html: html
         });
+
+        return info.messageId;
     }catch(e){
         console.log('Error sending email!', e);
         console.log('If you are using a non-gmail address, you have to change the nodemailer transport configuration for this to work properly.');
+
+        return null;
     }
 }

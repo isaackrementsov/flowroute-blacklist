@@ -8,11 +8,11 @@
 
 import express from 'express';
 import bodyParser from 'body-parser';
-import {promisify} from 'util';
 import flowroute from '../flowroute-sdk-v3-nodejs/lib/index.js';
+import {fork} from 'child_process';
 
 import config from '../config.js';
-import routes from './routes.js';
+import {routes} from './endpoints.js';
 import {initDB, testDB} from './db.js';
 
 
@@ -27,6 +27,9 @@ app.use(bodyParser.urlencoded({extended: false}));
 // Connect to MariaDB
 const pool = initDB();
 testDB(pool);
+
+// Start IMAP server to handle email replies
+fork('src/mailer-client.js');
 
 app.listen(config.port, async () => {
     console.log('Listening on port', config.port);

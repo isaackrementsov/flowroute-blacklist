@@ -16,7 +16,7 @@ export let sendMessage = async (from, to, content) => {
 		from: from,
 		body: content
 	};
-
+	console.log(msg)
 	await createMessage(msg);
 }
 
