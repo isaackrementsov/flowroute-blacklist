@@ -20,6 +20,15 @@ import {initDB, testDB} from './db.js';
 flowroute.Configuration.username = config.flowroute.username;
 flowroute.Configuration.password = config.flowroute.password;
 
+// Add a useful string method
+String.prototype.contains = function(...substrs){
+	for(let substr of substrs){
+		if(this.toLowerCase().indexOf(substr.toLowerCase()) != -1) return true;
+	}
+
+	return false;
+}
+
 // Set up middleware and web framework to read requests
 const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
