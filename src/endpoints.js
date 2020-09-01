@@ -4,7 +4,7 @@ import moment from 'moment';
 import config from '../config.js';
 import {sendMail} from './mailer.js';
 import {sendMessage, lookupNotHandled} from './flowroute.js';
-import {accountExists, sendOrder} from './wooCommerce.js';
+import {OrderHandler, messages} from './orders.js';
 
 // Check if message contains keywords in config.js list
 const containsKeyword = message => {
@@ -39,83 +39,14 @@ const handleMessage = async (message, connection) => {
             await sendMessage(to, from, config.flowroute.removalMessage);
         }
     }else if(body.contains('!order')){
-		// TODO: Add order stuff to its own module
-
-		// Check if an order has been started already
-		const ordersInProgress = await connection.query('SELECT * FROM orders WHERE from_number=(?) AND stage NOT "completed"', [from]);
-
-		if(ordersInProgress.length == 0){
-			// Create a new order if one is not in progress
-			await connection.query('INSERT INTO orders (from_number, stage) values (?, ?)', [from, 'name_required']);
-			// Prompt user for name
-			await sendMessage(`
-				You have requested to order through the messaging service. Available commands are:\n
-					!cancel | Cancel and remove the order in progress\n
-					!restart | Reset the information associated with the order in progress and restart the ordering process\n
-					!back | Go back to the last step in the order\n
-					!help | List available commands\n\n
-				Please enter the username associated with your account`);
-		}else{
-			await sendMessage(to, from, 'An order is already in progress under this number. If you would like to restart the order, use !restart. If you would like to cancel the order, use !cancel.')
-		}
+		await OrderHandler.init(to, from, connection);
 	}else{
-		const ordersInProgress = await connection.query('SELECT * FROM orders WHERE from_number=(?) AND stage NOT "completed"', [from]);
+        const ordersInProgress = await connection.query('SELECT * FROM orders WHERE from_number=(?) AND NOT stage="completed"', [from]);
 
 		// Handle an order in progress if one exists
 		if(ordersInProgress.length > 0){
-			const orderInProgress = ordersInProgress[0];
-
-			if(body.contains('!cancel')){
-				// Remove order in progress
-				await connection.query('DELETE FROM orders WHERE from_number=(?) AND stage NOT "completed"', [from]);
-			}else if(body.contains('!restart')){
-				// Reset order in progress
-				await connection.query('UPDATE orders SET status="name_required"');
-				await sendMessage(to, from, 'Please enter the username associated with your account');
-			}else if(body.contains('!help')){
-				await sendMessage(to, from, `Available commands:\n
-					!cancel | Cancel and remove the order in progress\n
-					!restart | Reset the information associated with the order in progress and restart the ordering process\n
-					!back | Go back to the last step in the order\n
-					!help | List available commands\n
-				`);
-			}else{
-				// Use actions based on the order status
-				switch(orderInProgress.status){
-					case 'name_required':
-						if(await accountExists(body)){
-							await connection.query('UPDATE orders SET (name, status) values (?, "password_required") WHERE from_number=(?) AND stage NOT "completed"', [body, from]);
-							await sendMessage(to, from, 'Enter the password for this account');
-						}else{
-							await sendMessage(to, from, 'No accounts found under that username. Please enter a valid one');
-						}
-
-					case 'password_required':
-						if(await accountExists(orderInProgress['name'], body)){
-							await connection.query('UPDATE orders SET (password, status) values (?, "content_required") WHERE from_number=(?) AND stage NOT "completed"', [body, from]);
-							await sendMessage(to, from, 'What would you like to place an order for?');
-						}else{
-							await sendMessage(to, from, `That password didn't work. Please try again`);
-						}
-
-					// TODO: add !back command
-					case 'content_required':
-						await connection.query('UPDATE orders SET (content, status) values (?, "pending_completion") WHERE from_number=(?) AND stage NOT "completed"', [body, from]);
-						await sendMessage(to, from, `Your order is ready to send. Does this sound right?\n\n
-							Order for ${orderInProgress['name']}:\n
-							For: ${body}\n\n
-							If so, use !complete to send the order
-						`);
-
-					case 'pending_completion':
-						if(body.contains('!complete')){
-							await connection.query('UPDATE orders SET status="completed" WHERE from_number=(?) AND stage NOT "completed"', [from]);
-							await sendMessage(to, from, 'Order successfully completed!');
-						}else{
-							await sendMessage(to, from, 'Use !complete to send the order.')
-						}
-				}
-			}
+			const orderHandler = new OrderHandler(to, from, body, connection, ordersInProgress[0]);
+            await orderHandler.handleMessage();
 		}else{
 			// Send an email with SMS details if it doesn't match any of the keywords
 			const messageId = await sendMail(from, `
