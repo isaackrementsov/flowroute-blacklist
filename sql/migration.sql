@@ -9,6 +9,7 @@ CREATE TABLE orders (
 	from_number varchar(255),
 	email varchar(255),
 	content varchar(255),
+	note varchar(255),
 	stage varchar(255)
 );
 
