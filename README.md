@@ -91,6 +91,7 @@ const config = {
 	}
 }
 ```
+Use `!order` to place an order via text message.
 ## Exporting Blacklist
 To get the blacklist stored in MariaDB exported to a `.txt` file (specifically `./db.txt`), run the following in terminal:
 ```bash
