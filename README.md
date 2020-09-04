@@ -80,14 +80,15 @@ $ curl --d "" http://localhost:my_port/callback_url
 ```
 If you are running this app in a production environment, you can use a PM2 configuration instead of `npm start`.
 ### WooCommerce
-The use the order feature of this application, you will need to generate a set of WooCommerce API keys using the Wordpress plugin dashboard. Additionally, make sure the Wordpress permalink option is set to "Post name". Add the API information to `config.js` as follows:
+The use the order feature of this application, you will need to generate a set of WooCommerce API keys using the Wordpress plugin dashboard. Additionally, make sure the Wordpress permalink option is set to "Post name". Additionally, you can add a list of phone numbers to accept orders from. Add the API information to `config.js` as follows:
 ```js
 const config = {
 	...
 	wooCommerce: {
 		url: 'store_url',
 		consumerKey: 'woocommerce_client_key',
-		consumerSecret: 'woocommerce_client_secret'
+		consumerSecret: 'woocommerce_client_secret',
+		orders: ['orderno1', 'orderno2']
 	}
 }
 ```

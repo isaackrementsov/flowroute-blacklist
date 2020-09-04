@@ -1,5 +1,8 @@
 import {sendMessage} from './flowroute.js';
 import {accountStatus, sendOrder} from './wooCommerce.js';
+import config from '../config.js';
+
+const orderNumbers = config.wooCommerce.orders;
 
 export const messages = {
 	cancel: 'Your order has been cancelled.',
@@ -10,6 +13,7 @@ export const messages = {
 !help | List available commands`,
 	init: 'You have requested to order through the delivery service. ',
 	init_failed: 'An order is already in progress under this number. If you would like to restart the order, use !restart. If you would like to cancel the order, use !cancel.',
+	init_wrong_number: `Unfortunately, you cannot place an order through this number. However, you can order from the following: ${orderNumbers.join(', ')}`,
 	complete: 'Order successfully completed!',
 	complete_error: 'There was an issue completing the order. Please try again or cancel the order.',
 	complete_failed: 'Use !complete to send the order.',
@@ -57,11 +61,16 @@ export class OrderHandler {
 		const ordersInProgress = await connection.query('SELECT * FROM orders WHERE from_number=(?) AND NOT stage="completed"', [from]);
 
 		if(ordersInProgress.length == 0){
-			// Create a new order if one is not in progress
-			await connection.query('INSERT INTO orders (from_number, stage) values (?, "email_required")', [from]);
-			// Prompt user for name
-			await sendMessage(to, from, messages.init + messages.help);
-			await sendMessage(to, from, messages.email_required);
+			if(orderNumbers.indexOf(to) == -1){
+				// Notify user that they cannot order through this number
+				await sendMessage(to, from, messages.init_wrong_number);
+			}else{
+				// Create a new order if one is not in progress
+				await connection.query('INSERT INTO orders (from_number, stage) values (?, "email_required")', [from]);
+				// Prompt user for name
+				await sendMessage(to, from, messages.init + messages.help);
+				await sendMessage(to, from, messages.email_required);
+			}
 		}else{
 			await sendMessage(to, from, messages.init_failed)
 		}
