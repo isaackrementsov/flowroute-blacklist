@@ -18,9 +18,11 @@ const listenIMAP = cb => {
         box: 'INBOX'
     }
 
-    notifier(imap)
-        .on('connected', () => console.log('IMAP server connected!'))
-        .on('end', () => notifier.start())
+    const instance = notifier(imap);
+
+	instance
+		.on('connected', () => console.log('IMAP server connected!'))
+        .on('end', () => instance.start())
         .on('mail', mail => cb(mail)).start();
 }
 

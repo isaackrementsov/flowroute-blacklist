@@ -38,7 +38,7 @@ const pool = initDB();
 testDB(pool);
 
 // Start IMAP server to handle email replies
-fork('src/mailer-client.js');
+fork('./mailer-client.js');
 
 app.listen(config.port, async () => {
     console.log('Listening on port', config.port);
