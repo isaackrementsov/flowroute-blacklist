@@ -19,7 +19,7 @@ export let accountStatus = async (email, phone) => {
 		const customerPhone = customer.billing.phone.replace('-', '');
 
 		// Check if phone number matches account (contains is used due to the extra +x at the front of a phone number)
-		if(/*phone.contains(customerPhone)*/ true){
+		if(phone.contains(customerPhone)){
 			// Lookup orders made by this customer
 			const orders = await api.get(`orders?customer=${customer.id}`);
 
