@@ -1,5 +1,8 @@
 import {sendMessage} from './flowroute.js';
 import {accountStatus, sendOrder} from './wooCommerce.js';
+import config from '../config.js';
+
+const orderNumbers = config.wooCommerce.orders;
 
 export const messages = {
 	cancel: 'Your order has been cancelled.',
@@ -10,19 +13,23 @@ export const messages = {
 !help | List available commands`,
 	init: 'You have requested to order through the delivery service. ',
 	init_failed: 'An order is already in progress under this number. If you would like to restart the order, use !restart. If you would like to cancel the order, use !cancel.',
+	init_wrong_number: `Unfortunately, you cannot place an order through this number. However, you can order from the following: ${orderNumbers.join(', ')}`,
 	complete: 'Order successfully completed!',
+	complete_error: 'There was an issue completing the order. Please try again or cancel the order.',
 	complete_failed: 'Use !complete to send the order.',
 	email_required: `Please enter the email associated with your account.`,
 	content_required: 'What would you like to place an order for?',
+	note_required: 'How would you like this order delivered?',
 	pending_completion: (orderInProgress, body) => `Your order is ready to send. Does this sound right?\n\n
 Order under ${orderInProgress['email']}:\n
-For: ${body}\n\n
+For: ${orderInProgress['content']}\n
+Delivery details: ${body}\n\n
 If so, use !complete to send the order`,
 	back_failed: 'Use !cancel to go back further than this.'
 }
 
 export class OrderHandler {
-	stages = ['email_required', 'content_required', 'pending_completion', 'completed'];
+	stages = ['email_required', 'content_required', 'note_required', 'pending_completion', 'completed'];
 
 	constructor(to, from, body, connection, orderInProgress){
 		this.to = to;
@@ -54,11 +61,16 @@ export class OrderHandler {
 		const ordersInProgress = await connection.query('SELECT * FROM orders WHERE from_number=(?) AND NOT stage="completed"', [from]);
 
 		if(ordersInProgress.length == 0){
-			// Create a new order if one is not in progress
-			await connection.query('INSERT INTO orders (from_number, stage) values (?, "email_required")', [from]);
-			// Prompt user for name
-			await sendMessage(to, from, messages.init + messages.help);
-			await sendMessage(to, from, messages.email_required);
+			if(orderNumbers.indexOf(to) == -1){
+				// Notify user that they cannot order through this number
+				await sendMessage(to, from, messages.init_wrong_number);
+			}else{
+				// Create a new order if one is not in progress
+				await connection.query('INSERT INTO orders (from_number, stage) values (?, "email_required")', [from]);
+				// Prompt user for name
+				await sendMessage(to, from, messages.init + messages.help);
+				await sendMessage(to, from, messages.email_required);
+			}
 		}else{
 			await sendMessage(to, from, messages.init_failed)
 		}
@@ -107,15 +119,25 @@ export class OrderHandler {
 		},
 		content_required: async () => {
 			// Add order content to database
-			await this.connection.query('UPDATE orders SET content=(?), stage="pending_completion" WHERE from_number=(?) AND NOT stage="completed"', [this.body, this.from]);
+			await this.connection.query('UPDATE orders SET content=(?), stage="note_required" WHERE from_number=(?) AND NOT stage="completed"', [this.body, this.from]);
+			await this.send(messages.note_required);
+		},
+		note_required: async () => {
+			// Ask customer for an order note
+			await this.connection.query('UPDATE orders SET note=(?), stage="pending_completion" WHERE from_number=(?) AND NOT stage="completed"', [this.body, this.from]);
 			await this.send(messages.pending_completion(this.orderInProgress, this.body));
 		},
 		pending_completion: async () => {
 			if(this.body.contains('!complete')){
-				// Complete the order if the user confirms
-				await this.connection.query('UPDATE orders SET stage="completed" WHERE from_number=(?) AND NOT stage="completed"', [this.from]);
-				await this.send(messages.complete);
-				await sendOrder(this);
+				// Complete the order if the user confirms and send via WooCommerce
+				try {
+					await sendOrder(this.orderInProgress);
+
+					await this.connection.query('UPDATE orders SET stage="completed" WHERE from_number=(?) AND NOT stage="completed"', [this.from]);
+					await this.send(messages.complete);
+				}catch(e){
+					await this.send(messages.complete_error);
+				}
 			}else{
 				// Ask for confirmation otherwise
 				await this.send(messages.complete_failed);

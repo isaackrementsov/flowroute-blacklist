@@ -15,7 +15,7 @@ export let accountStatus = async (email, phone) => {
 
 	// Pass over this if there is no matching email
     if(customers.data.length > 0){
-        const customer = customers[0];
+        const customer = customers.data[0];
 		const customerPhone = customer.billing.phone.replace('-', '');
 
 		// Check if phone number matches account (contains is used due to the extra +x at the front of a phone number)
@@ -37,4 +37,22 @@ export let accountStatus = async (email, phone) => {
 
     return status;
 }
-export let sendOrder = () => {};
+
+export let sendOrder = async orderDetails => {
+	const customers = await api.get(`customers?email=${orderDetails.email}`);
+
+	if(customers.data.length > 0){
+		const customer = customers.data[0];
+
+		const sent = await api.post('orders', {
+			payment_method: "cod",
+			payment_method_title: "Cash On Delivery",
+			set_paid: false,
+			billing: customer.billing,
+			customer_id: customer.id,
+			customer_note: `Products: ${orderDetails.content}, Delivery Note: ${orderDetails.note}`
+		});
+
+		await api.delete(`orders/${sent.data.id}`);
+	}
+}

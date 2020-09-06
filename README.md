@@ -26,14 +26,14 @@ const config = {
 export default config;
 ```
 ### Email
-To use the `./src/mailer.js` module in this app as it is written, you will need to have a gmail account. Otherwise, change the transporter configuration in that file using [Nodemailer documentation](https://www.npmjs.com/package/nodemailer).
+To use the `./src/mailer.js` and `mailer-client.js` modules in this app as they are written, you will need to have a gmail account. Otherwise, change the transporter configuration in that file using [Nodemailer documentation](https://www.npmjs.com/package/nodemailer).
 
 Once you have decided on an email address to use, simply add it to the `email` section in `config.js`.  
 
-By default, gmail will deny usage of Nodemailer without Oath verification. To solve this issue, go to the [Less Secure Apps Settings](https://myaccount.google.com/lesssecureapps) page and toggle the switch shown to the "on" status.  
+By default, gmail will deny usage of Nodemailer and the IMAP client without Oath verification. To solve this issue, go to the [Less Secure Apps Settings](https://myaccount.google.com/lesssecureapps) page and toggle the switch shown to the "on" status.  
 
 ### Flowroute
-To actually accept incoming SMS from flowroute, you will need to add a callback url in the Flowroute API portal as explained [here](https://blog.flowroute.com/2016/09/22/receive-an-inbound-message/). Then, modify the `callbackUrl` option in `config.js` accordingly.  
+To actually accept and send incoming SMS from Flowroute, you will need to add a callback url in the Flowroute API portal as explained [here](https://blog.flowroute.com/2016/09/22/receive-an-inbound-message/). Then, modify the `callbackUrl` option in `config.js` accordingly.  
 
 You also will need to configure the `flowroute` section in `config.js` as follows:
 
@@ -57,7 +57,7 @@ Then, use the `db` section of `config.js` to set the correct database password, 
 ```js
 const config = {
     ...
-    'db': {
+    db: {
         host: 'localhost',
         port: 3306,
         name: 'flowroute',
@@ -74,11 +74,25 @@ $ npm install -g nodemon
 $ npm install
 $ npm start
 ```
-To test it on a development server, open another terminal window and run the following (if curl is installed)
+To test it on a development server, open another terminal window and run the following (if curl is installed) each time you send a message to the Flowroute number
 ```bash
-$ curl --data "body=my%20message&from='18553569678'" http://localhost:my_port/callback_url
+$ curl --d "" http://localhost:my_port/callback_url
 ```
 If you are running this app in a production environment, you can use a PM2 configuration instead of `npm start`.
+### WooCommerce
+The use the order feature of this application, you will need to generate a set of WooCommerce API keys using the Wordpress plugin dashboard. Additionally, make sure the Wordpress permalink option is set to "Post name". Additionally, you can add a list of phone numbers to accept orders from. Add the API information to `config.js` as follows:
+```js
+const config = {
+	...
+	wooCommerce: {
+		url: 'store_url',
+		consumerKey: 'woocommerce_client_key',
+		consumerSecret: 'woocommerce_client_secret',
+		orders: ['orderno1', 'orderno2']
+	}
+}
+```
+Use `!order` to place an order via text message.
 ## Exporting Blacklist
 To get the blacklist stored in MariaDB exported to a `.txt` file (specifically `./db.txt`), run the following in terminal:
 ```bash
