@@ -10,11 +10,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import flowroute from '../flowroute-sdk-v3-nodejs/lib/index.js';
 import {fork} from 'child_process';
+import path from 'path';
 
 import config from '../config.js';
 import {routes} from './endpoints.js';
 import {initDB, testDB} from './db.js';
 
+const __dirname = path.resolve();
 
 // Initialize FlowRoute
 flowroute.Configuration.username = config.flowroute.username;
@@ -38,7 +40,7 @@ const pool = initDB();
 testDB(pool);
 
 // Start IMAP server to handle email replies
-fork('src/mailer-client.js');
+fork(__dirname + '/src/mailer-client.js');
 
 app.listen(config.port, async () => {
     console.log('Listening on port', config.port);
