@@ -4,7 +4,7 @@ import moment from 'moment';
 import config from '../config.js';
 import {sendMail} from './mailer.js';
 import {sendMessage, lookupNotHandled} from './flowroute.js';
-import {OrderHandler, messages} from './orders.js';
+import {OrderHandler} from './orders.js';
 
 // Check if message contains keywords in config.js list
 const containsKeyword = message => {
@@ -101,21 +101,22 @@ export function routes(app, pool){
     app.use('/', router);
 
     // Listen for SMS POST requests from callback URL (set on the Flowroute website)
-    app.post(config.callbackUrl, async (_req, res) => {
+    app.post(config.callbackUrl, async (req, res) => {
         let connection;
 
         try {
             // Get a connection from the MariaDB pool
             connection = await pool.getConnection();
+            // Get message request data
+            message = req.body.data;
 
-            // Find recent unhandled messages within a 10 minute range of now
-            const startDate = moment.utc(moment().subtract(5, 'minutes').valueOf());
-            const endDate = moment.utc(moment().add(5, 'minutes').valueOf());
-            const unhandled = await lookupNotHandled(startDate, endDate, connection);
-
-            // Handle these messages (blacklist or email info)
-            for(let message of unhandled){
-                await handleMessage(message, connection);
+            // Check whether the message has already been recieved
+            rows = await connection.query('SELECT id FROM responded WHERE id = (?)', [message.id]);
+            // Handle only if unique
+            if(rows.length == 0){
+                handleMessage(message, connection);
+            }else{
+                await connection.query('DELETE FROM responded WHERE id = (?)', [message.id]);
             }
         }catch(e){
             // Handle server errors

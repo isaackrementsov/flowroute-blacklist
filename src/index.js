@@ -33,7 +33,8 @@ String.prototype.contains = function(...substrs){
 
 // Set up middleware and web framework to read requests
 const app = express();
-app.use(bodyParser.urlencoded({extended: false}));
+// Use JSON to accept callback requests
+app.use(bodyParser.json());
 
 // Connect to MariaDB
 const pool = initDB();

@@ -19,27 +19,3 @@ export let sendMessage = async (from, to, content) => {
 
 	await createMessage(msg);
 }
-
-// List messages in a particular date range
-let listMessages = async (startDate, endDate) => {
-	return await getMessages(startDate, endDate, 10, callback);
-}
-
-// Lookup the messages that haven't been responded to
-export let lookupNotHandled = async (startDate, endDate, connection) => {
-	let messages = await listMessages(startDate, endDate);
-	messages = JSON.parse(messages).data;
-
-	const notHandled = [];
-
-	for(let message of messages){
-		if(message.attributes.body && (message.attributes.body != config.flowroute.removalMessage) && (config.wooCommerce.orders.indexOf(message.attributes.from) == -1)){
-			// Check if the message was put in the responded table
-			const rows = await connection.query('SELECT * FROM responded WHERE message_id = (?)', [message.id]);
-
-			if(rows.length == 0) notHandled.push(message);
-		}
-	}
-
-	return notHandled;
-}
