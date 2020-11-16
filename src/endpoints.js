@@ -113,7 +113,7 @@ export function routes(app, pool){
             // Check whether the message has already been recieved
             let rows = await connection.query('SELECT message_id FROM responded WHERE message_id = (?)', [message.id]);
             // Handle only if unique
-            if(rows.length == 0){
+            if(rows.length == 0 && message.type != 'delivery_receipt'){
                 handleMessage(message, connection);
             }else{
                 await connection.query('DELETE FROM responded WHERE message_id = (?)', [message.id]);
