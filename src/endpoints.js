@@ -3,7 +3,7 @@ import moment from 'moment';
 
 import config from '../config.js';
 import {sendMail} from './mailer.js';
-import {sendMessage, lookupNotHandled} from './flowroute.js';
+import {sendMessage} from './flowroute.js';
 import {OrderHandler} from './orders.js';
 
 // Check if message contains keywords in config.js list
