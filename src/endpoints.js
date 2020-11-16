@@ -108,10 +108,10 @@ export function routes(app, pool){
             // Get a connection from the MariaDB pool
             connection = await pool.getConnection();
             // Get message request data
-            message = req.body.data;
+            let message = req.body.data;
 
             // Check whether the message has already been recieved
-            rows = await connection.query('SELECT id FROM responded WHERE id = (?)', [message.id]);
+            let rows = await connection.query('SELECT id FROM responded WHERE id = (?)', [message.id]);
             // Handle only if unique
             if(rows.length == 0){
                 handleMessage(message, connection);
