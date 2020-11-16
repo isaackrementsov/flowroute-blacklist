@@ -111,12 +111,12 @@ export function routes(app, pool){
             let message = req.body.data;
 
             // Check whether the message has already been recieved
-            let rows = await connection.query('SELECT id FROM responded WHERE id = (?)', [message.id]);
+            let rows = await connection.query('SELECT id FROM responded WHERE message_id = (?)', [message.id]);
             // Handle only if unique
             if(rows.length == 0){
                 handleMessage(message, connection);
             }else{
-                await connection.query('DELETE FROM responded WHERE id = (?)', [message.id]);
+                await connection.query('DELETE FROM responded WHERE message_id = (?)', [message.id]);
             }
         }catch(e){
             // Handle server errors
